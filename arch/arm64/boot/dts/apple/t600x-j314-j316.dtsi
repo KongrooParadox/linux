@@ -9,6 +9,8 @@
  * Copyright The Asahi Linux Contributors
  */
 
+#define ENABLE_DCPEXT_TYPEC
+
 #include <dt-bindings/leds/common.h>
 
 / {
@@ -20,6 +22,13 @@
 		atcphy2 = &atcphy2;
 		atcphy3 = &atcphy3;
 		bluetooth0 = &bluetooth0;
+ 		dcp = &dcp;
+ 		dcpext0 = &dcpext0;
+#ifdef ENABLE_DCPEXT_TYPEC
+		dcpext1 = &dcpext1;
+#endif
+ 		disp0 = &display;
+ 		disp0_piodma = &disp0_piodma;
 		serial0 = &serial0;
 		wifi0 = &wifi0;
 	};
@@ -108,6 +117,11 @@
 			power-role = "dual";
 			data-role = "dual";
 
+#ifdef ENABLE_DCPEXT_TYPEC
+			/* hacks */
+			displayport = <&dcpext1>;
+#endif
+
 			ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
@@ -168,6 +182,144 @@
 		interrupt-names = "irq";
 	};
 };
+
+#ifdef ENABLE_DCPEXT_TYPEC
+
+&display {
+	iommus = <&disp0_dart 0>, <&dispext0_dart 0>, <&dispext1_dart 0>;
+};
+
+&dispext1_dart {
+	status = "okay";
+};
+
+&dcpext1_dart {
+	status = "okay";
+};
+
+&dcpext1_mbox {
+	status = "okay";
+};
+
+&dcpext1 {
+	status = "okay";
+	apple,connector-type = "DP";
+
+	/* hacks */
+	apple,dptx-phy = <1>;
+	phys = <&atcphy1 PHY_TYPE_DP>;
+	phy-names = "dp-phy";
+	mux-controls = <&atcphy1_xbar 0>;
+	mux-control-names = "dp-xbar";
+	mux-index = <2>;
+};
+
+&dpaudio2 {
+	status = "okay";
+};
+
+&atcphy1_xbar {
+        status = "okay";
+};
+#endif
+
+ /* Virtual regulator representing the shared shutdown GPIO */
+ / {
+ 	speaker_sdz: fixed-regulator-sn012776-sdz {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "sn012776-sdz";
+ 		startup-delay-us = <5000>;
+ 		gpios = <&pinctrl_ap 178 GPIO_ACTIVE_HIGH>;
+ 		enable-active-high;
+ 	};
+ };
+
+ &i2c1 {
+ 	status = "okay";
+
+ 	speaker_left_tweet: codec@3a {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x3a>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Left Tweeter";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <8>;
+ 		ti,vmon-slot-no = <10>;
+ 	};
+
+ 	speaker_left_woof1: codec@38 {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x38>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Left Woofer 1";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <0>;
+ 		ti,vmon-slot-no = <2>;
+ 	};
+
+ 	speaker_left_woof2: codec@39 {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x39>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Left Woofer 2";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <16>;
+ 		ti,vmon-slot-no = <18>;
+ 	};
+ };
+
+ &i2c2 {
+ 	status = "okay";
+
+ 	jack_codec: codec@4b {
+ 		compatible = "cirrus,cs42l84";
+ 		reg = <0x4b>;
+ 		reset-gpios = <&pinctrl_nub 4 GPIO_ACTIVE_HIGH>;
+ 		#sound-dai-cells = <0>;
+ 		interrupts-extended = <&pinctrl_ap 180 IRQ_TYPE_LEVEL_LOW>;
+ 		sound-name-prefix = "Jack";
+ 	};
+ };
+
+ &i2c3 {
+ 	status = "okay";
+
+ 	speaker_right_tweet: codec@3d {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x3d>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Right Tweeter";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <12>;
+ 		ti,vmon-slot-no = <14>;
+ 	};
+
+ 	speaker_right_woof1: codec@3b {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x3b>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Right Woofer 1";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <4>;
+ 		ti,vmon-slot-no = <6>;
+ 	};
+
+ 	speaker_right_woof2: codec@3c {
+ 		compatible = "ti,sn012776", "ti,tas2764";
+ 		reg = <0x3c>;
+ 		SDZ-supply = <&speaker_sdz>;
+ 		#sound-dai-cells = <0>;
+ 		sound-name-prefix = "Right Woofer 2";
+ 		interrupts-extended = <&pinctrl_ap 179 IRQ_TYPE_LEVEL_LOW>;
+ 		ti,imon-slot-no = <20>;
+ 		ti,vmon-slot-no = <22>;
+ 	};
+ };
 
 &nco_clkref {
 	clock-frequency = <1068000000>;
