@@ -9,6 +9,10 @@
 
 /dts-v1/;
 
+#define ENABLE_DCPEXT_TYPEC
+
+#define NO_DCP
+
 #include "t6022.dtsi"
 #include "t602x-j474-j475.dtsi"
 #include "t6022-jxxxd.dtsi"
