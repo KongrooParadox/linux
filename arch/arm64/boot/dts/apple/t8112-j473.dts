@@ -9,6 +9,8 @@
 
 /dts-v1/;
 
+#define ENABLE_DCPEXT_TYPEC
+
 #include "t8112.dtsi"
 #include "t8112-jxxx.dtsi"
 
@@ -21,6 +23,86 @@
 		ethernet0 = &ethernet0;
 	};
 };
+
+ &framebuffer0 {
+ 	power-domains = <&ps_dispext_cpu0>, <&ps_dptx_ext_phy>;
+ };
+
+ &dptxphy {
+ 	status = "okay";
+ };
+
+ &dcp {
+ 	status = "disabled";
+ };
+
+ &display {
+ 	iommus = <&dispext0_dart 0>;
+ };
+ &dispext0_dart {
+ 	status = "okay";
+ };
+ &dcpext_dart {
+ 	status = "okay";
+ };
+ &dcpext_mbox {
+ 	status = "okay";
+ };
+ &dcpext {
+ 	status = "okay";
+ 	apple,connector-type = "HDMI-A";
+
+ 	/*  HDMI HPD gpio, used as interrupt*/
+ 	hdmi-hpd-gpios = <&pinctrl_aop 49 GPIO_ACTIVE_HIGH>;
+
+ 	hdmi-pwren-gpios = <&smc_gpio 21 GPIO_ACTIVE_HIGH>;
+ 	dp2hdmi-pwren-gpios = <&smc_gpio 22 GPIO_ACTIVE_HIGH>;
+
+ 	phys = <&dptxphy>;
+ 	phy-names = "dp-phy";
+ 	apple,dptx-phy = <5>;
+ };
+
+#ifdef ENABLE_DCPEXT_TYPEC
+/ {
+	aliases {
+		dcp = &dcp;
+	};
+};
+
+&display {
+	/* dispext0_dart needs to be first for m1n1's */
+	iommus = <&dispext0_dart 0>, <&disp0_dart 0>;
+};
+
+&disp0_dart {
+	status = "okay";
+};
+
+&dcp {
+	status = "okay";
+	apple,connector-type = "DP";
+
+	/* hacks */
+	apple,dptx-phy = <1>;
+	phys = <&atcphy1 PHY_TYPE_DP>;
+	phy-names = "dp-phy";
+	mux-controls = <&atcphy1_xbar 0>;
+	mux-control-names = "dp-xbar";
+	mux-index = <0>;
+};
+
+&dcpext {
+	/delete-property/ mux-controls;
+	/delete-property/ mux-control-names;
+	/delete-property/ mux-index;
+};
+
+&typec1 {
+	/* hacks */
+	displayport = <&dcp>;
+};
+#endif
 
 /*
  * Keep the power-domains used for the HDMI port on.
